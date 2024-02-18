@@ -3,7 +3,7 @@ import glob
 import sys
 import io
 import PyPDF4
-import zxing
+from pyzxing import BarCodeReader
 
 from typing import List
 from tempfile import TemporaryDirectory
@@ -26,6 +26,19 @@ parser.add_argument('-v', '--verbose', action='store_true',
                     help='Show verbose processing messages')
 parser.add_argument('-d', '--debug', action='store_true',
                     help='Show debug messages')
+
+
+def extract_barcodes(results) -> (str, str):
+    sep = ""
+    race = ""
+    for r in results:
+        if 'parsed' in r:
+            barcode = r['parsed'].decode('ascii')
+            if "RPSEQ:" in barcode:
+                sep = barcode.partition(":")[2]
+            if "RC:" in barcode:
+                race = barcode.partition(": ")[2]
+    return sep, race
 
 
 class PdfQrSplit:
@@ -53,9 +66,10 @@ class PdfQrSplit:
         pdfs_count = 0
         current_page = 0
 
-        reader = zxing.BarCodeReader()
+        reader = BarCodeReader()
         pdf_writer = PyPDF4.PdfFileWriter()
         last_label = "999 Unknown"
+        last_race = ""
 
         while current_page != self.total_pages:
 
@@ -90,24 +104,29 @@ class PdfQrSplit:
                         if tgtn:
                             if self.debug:
                                 print("      Wrote image {}; Checking for separator barcode".format(tgtn))
-                            barcode = reader.decode(tgtn)
-                            if barcode and args.separator in barcode.parsed:
-                                label = barcode.parsed.partition(":")[2]
+                            sep, race = extract_barcodes(reader.decode(tgtn))
+                            if sep:
+                                new_sep = sep
+                                new_race = race
                                 if self.debug:
                                     print("        Found separator barcode")
-                                    print("        Barcode:", barcode.parsed)
-                                    print("        Label:", label)
+                                    print("        Label:", new_sep)
+                                    print("        Race:", new_race)
                                 split = True
-
                 if split:
                     if args.keep_page:
                         pdf_writer.addPage(page)
 
-                    output = last_label + ".pdf"
-                    last_label = label
+                    if last_race:
+                        output = last_label + "-" + last_race + ".pdf"
+                    else:
+                        output = last_label + ".pdf"
+                    last_label = new_sep
+                    last_race = new_race
                     if pdf_writer.getNumPages() > 0:
                         if self.verbose:
-                            print("    Found separator - writing {} pages to {}".format(pdf_writer.getNumPages(), output))
+                            print(
+                                "    Found separator - writing {} pages to {}".format(pdf_writer.getNumPages(), output))
                         with open(output, 'wb') as output_pdf:
                             pdf_writer.write(output_pdf)
                         pdfs_count += 1
@@ -123,7 +142,10 @@ class PdfQrSplit:
 
             current_page += 1
 
-        output = last_label + ".pdf"
+        if last_race:
+            output = last_label + "-" + last_race + ".pdf"
+        else:
+            output = last_label + ".pdf"
         if pdf_writer.getNumPages() > 0:
             if self.verbose:
                 print("    End of input - writing {} pages to {}".format(pdf_writer.getNumPages(), output))
