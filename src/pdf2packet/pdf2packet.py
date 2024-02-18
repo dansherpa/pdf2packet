@@ -4,6 +4,8 @@ import sys
 import io
 import PyPDF4
 from pyzxing import BarCodeReader
+from PyPDF4 import PdfFileMerger
+import os, argparse
 
 from typing import List
 from tempfile import TemporaryDirectory
@@ -28,6 +30,25 @@ parser.add_argument('-d', '--debug', action='store_true',
                     help='Show debug messages')
 
 
+def merge_pdfs(input_files: list, page_range: tuple, output_file: str, bookmark: bool = True):
+    """
+    Merge a list of PDF files and save the combined result into the `output_file`.
+    `page_range` to select a range of pages (behaving like Python's range() function) from the input files
+        e.g (0,2) -> First 2 pages
+        e.g (0,6,2) -> pages 1,3,5
+    bookmark -> add bookmarks to the output file to navigate directly to the input file section within the output file.
+    """
+    # strict = False -> To ignore PdfReadError - Illegal Character error
+    merger = PdfFileMerger(strict=False)
+    for input_file in input_files:
+        bookmark_name = os.path.splitext(os.path.basename(input_file))[0] if bookmark else None
+        # pages To control which pages are appended from a particular file.
+        merger.append(fileobj=open(input_file, 'rb'), import_bookmarks=False, bookmark=bookmark_name)
+    # Insert the pdf at specific page
+    merger.write(fileobj=open(output_file, 'wb'))
+    merger.close()
+
+
 def extract_barcodes(results) -> (str, str):
     sep = ""
     race = ""
@@ -36,6 +57,8 @@ def extract_barcodes(results) -> (str, str):
             barcode = r['parsed'].decode('ascii')
             if "RPSEQ:" in barcode:
                 sep = barcode.partition(":")[2]
+            if "007" in barcode:
+                barcode = "RC: N0276"
             if "RC:" in barcode:
                 race = barcode.partition(": ")[2]
     return sep, race
@@ -65,6 +88,8 @@ class PdfQrSplit:
         """
         pdfs_count = 0
         current_page = 0
+        common_docs = []
+        merge_files = {}
 
         reader = BarCodeReader()
         pdf_writer = PyPDF4.PdfFileWriter()
@@ -119,8 +144,11 @@ class PdfQrSplit:
 
                     if last_race:
                         output = last_label + "-" + last_race + ".pdf"
+                        merge_files.setdefault(last_race, []).append(output)
                     else:
                         output = last_label + ".pdf"
+                        if pdf_writer.getNumPages() > 0:
+                            common_docs.append(output)
                     last_label = new_sep
                     last_race = new_race
                     if pdf_writer.getNumPages() > 0:
@@ -144,11 +172,24 @@ class PdfQrSplit:
 
         if last_race:
             output = last_label + "-" + last_race + ".pdf"
+            merge_files.setdefault(last_race, []).append(output)
         else:
             output = last_label + ".pdf"
+            if pdf_writer.getNumPages() > 0:
+                common_docs.append(output)
         if pdf_writer.getNumPages() > 0:
             if self.verbose:
                 print("    End of input - writing {} pages to {}".format(pdf_writer.getNumPages(), output))
+                for d in common_docs:
+                    for r in merge_files:
+                        merge_files[r].append(d)
+                for f in merge_files.keys():
+                    merge_file = f + ".pdf"
+                    print("    Merging these files into {}:".format(merge_file))
+                    merge_files[f] = sorted(merge_files[f])
+                    for r in merge_files[f]:
+                        print("        {}".format(r))
+                    merge_pdfs(input_files=merge_files[f], page_range=(1,999), output_file=merge_file)
             with open(output, 'wb') as output_pdf:
                 pdf_writer.write(output_pdf)
             pdfs_count += 1

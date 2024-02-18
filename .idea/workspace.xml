@@ -92,8 +92,8 @@
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/src/pdf2packet/pdf2packet.py</url>
-          <line>107</line>
-          <option name="timeStamp" value="4" />
+          <line>191</line>
+          <option name="timeStamp" value="11" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
@@ -101,6 +101,7 @@
       <configuration name="PythonConfigurationType">
         <watch expression="r['parsed'].decode('ascii')" language="Python" />
         <watch expression="barcode['parsed'].decode('ascii')" language="Python" />
+        <watch expression="merge_files[f]" language="Python" />
       </configuration>
     </watches-manager>
   </component>
