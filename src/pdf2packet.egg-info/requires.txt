@@ -1,0 +1,3 @@
+PyPDF4
+pyzxing
+Pillow

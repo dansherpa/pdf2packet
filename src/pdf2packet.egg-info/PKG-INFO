@@ -1,0 +1,16 @@
+Metadata-Version: 2.1
+Name: pdf2packet
+Version: 0.0.9
+Summary: Combines and sorts PDFs with Cover Sheets into Result Packets
+Author-email: Dan Kennedy <dansherpa@gmail.com>
+Project-URL: Homepage, https://github.com/dansherpa/pdf2packet
+Project-URL: Issues, https://github.com/dansherpa/pdf2packet/issues
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: PyPDF4
+Requires-Dist: pyzxing
+Requires-Dist: Pillow

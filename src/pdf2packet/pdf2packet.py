@@ -1,4 +1,3 @@
-import argparse
 import glob
 import sys
 import io
@@ -7,21 +6,15 @@ from pyzxing import BarCodeReader
 from PyPDF4 import PdfFileMerger
 import os, argparse
 
-from typing import List
 from tempfile import TemporaryDirectory
-from PIL import Image
+import PIL.Image
 
-parser = argparse.ArgumentParser(description='Split PDF-file into separate files based on a separator barcode')
+parser = argparse.ArgumentParser(
+    description='Split PDF files into separate files based on a separator barcode and then combine them into a result packet')
 parser.add_argument('filename', metavar='inputfile', type=str,
                     help='Filename or glob to process')
-parser.add_argument('-p', '--prefix', default="split",
-                    help='Prefix for generated PDF files. Default: split')
-parser.add_argument('-s', '--separator', default="RPSEQ:",
-                    help='Barcode content used to find separator pages. Default: RPSEQ:')
-parser.add_argument('-k', '--keep-page', action='store_true',
-                    help='Keep separator page in previous document')
-parser.add_argument('--keep-page-next', action='store_true',
-                    help='Keep separator page in next document')
+parser.add_argument('--keep-separator', action='store_true',
+                    help='Keep separator page in split document')
 parser.add_argument('-b', '--brightness', type=int, default=128,
                     help='brightness threshold for barcode preparation (0-255). Default: 128')
 parser.add_argument('-v', '--verbose', action='store_true',
@@ -30,12 +23,9 @@ parser.add_argument('-d', '--debug', action='store_true',
                     help='Show debug messages')
 
 
-def merge_pdfs(input_files: list, page_range: tuple, output_file: str, bookmark: bool = True):
+def merge_pdfs(input_files: list, output_file: str, bookmark: bool = True):
     """
     Merge a list of PDF files and save the combined result into the `output_file`.
-    `page_range` to select a range of pages (behaving like Python's range() function) from the input files
-        e.g (0,2) -> First 2 pages
-        e.g (0,6,2) -> pages 1,3,5
     bookmark -> add bookmarks to the output file to navigate directly to the input file section within the output file.
     """
     # strict = False -> To ignore PdfReadError - Illegal Character error
@@ -57,8 +47,8 @@ def extract_barcodes(results) -> (str, str):
             barcode = r['parsed'].decode('ascii')
             if "RPSEQ:" in barcode:
                 sep = barcode.partition(":")[2]
-            if "007" in barcode:
-                barcode = "RC: N0276"
+            # if "007" in barcode:
+            #     barcode = "RC: N0276"
             if "RC:" in barcode:
                 race = barcode.partition(": ")[2]
     return sep, race
@@ -79,10 +69,8 @@ class PdfQrSplit:
                 )
             )
 
-    def split_qr(self, split_text: str, ifiles: int) -> int:
+    def split_qr(self, filepath: str) -> int:
         """Creates new files based on barcode contents.
-        Args:
-            split_text: Barcode content to recognize a separator page
         Returns:
             int: Number of generated files.
         """
@@ -91,13 +79,16 @@ class PdfQrSplit:
         common_docs = []
         merge_files = {}
 
+        print("Scanning {}".format(filepath), end=" ")
+        sys.stdout.flush()
         reader = BarCodeReader()
         pdf_writer = PyPDF4.PdfFileWriter()
         last_label = "999 Unknown"
         last_race = ""
 
         while current_page != self.total_pages:
-
+            print(current_page + 1, end=" ")
+            sys.stdout.flush()
             if self.verbose:
                 print("  Analyzing page {}".format((current_page + 1)))
 
@@ -111,6 +102,8 @@ class PdfQrSplit:
 
                 split = False
                 for obj in xObject:
+                    print(".", end=" ")
+                    sys.stdout.flush()
                     tgtn = False
                     if xObject[obj]['/Subtype'] == '/Image':
                         data = xObject[obj].getData()
@@ -119,7 +112,7 @@ class PdfQrSplit:
                                 '/DCTDecode' in xObject[obj]['/Filter'] or \
                                 '/JPXDecode' in xObject[obj]['/Filter']:
                             tgtn = temp_dir + "/" + obj[1:] + ".png"
-                            img = Image.open(io.BytesIO(data))
+                            img = PIL.Image.open(io.BytesIO(data))
                             fn = lambda x: 255 if x > self.brightness else 0
                             img = img.convert('L').point(fn, mode='1')
                             img.save(tgtn)
@@ -139,9 +132,6 @@ class PdfQrSplit:
                                     print("        Race:", new_race)
                                 split = True
                 if split:
-                    if args.keep_page:
-                        pdf_writer.addPage(page)
-
                     if last_race:
                         output = last_label + "-" + last_race + ".pdf"
                         merge_files.setdefault(last_race, []).append(output)
@@ -163,7 +153,7 @@ class PdfQrSplit:
                     # Due to a bug in PyPDF4 PdfFileReader breaks when invoking PdfFileWriter.write - reopen file
                     self.input_pdf = PyPDF4.PdfFileReader(filepath, "rb")
 
-                    if args.keep_page_next:
+                    if args.keep_separator:
                         pdf_writer.addPage(page)
                 else:
                     pdf_writer.addPage(page)
@@ -180,47 +170,59 @@ class PdfQrSplit:
         if pdf_writer.getNumPages() > 0:
             if self.verbose:
                 print("    End of input - writing {} pages to {}".format(pdf_writer.getNumPages(), output))
-                for d in common_docs:
-                    for r in merge_files:
-                        merge_files[r].append(d)
-                for f in merge_files.keys():
-                    merge_file = f + ".pdf"
-                    print("    Merging these files into {}:".format(merge_file))
-                    merge_files[f] = sorted(merge_files[f])
-                    for r in merge_files[f]:
-                        print("        {}".format(r))
-                    merge_pdfs(input_files=merge_files[f], page_range=(1,999), output_file=merge_file)
             with open(output, 'wb') as output_pdf:
                 pdf_writer.write(output_pdf)
             pdfs_count += 1
+            for d in common_docs:
+                print(".", end=" ")
+                sys.stdout.flush()
+                for r in merge_files:
+                    print(".", end=" ")
+                    sys.stdout.flush()
+                    merge_files[r].append(d)
+            if len(merge_files) == 0:
+                print(".")
+                print("    No race codes found to create packets for")
+                sys.stdout.flush()
+            for f in merge_files.keys():
+                print(".")
+                merge_file = f + ".pdf"
+                print("    Merging these files into Result Packet {}:".format(merge_file))
+                sys.stdout.flush()
+                merge_files[f] = sorted(merge_files[f])
+                for r in merge_files[f]:
+                    print("        {}".format(r))
+                    sys.stdout.flush()
+                merge_pdfs(input_files=merge_files[f], output_file=merge_file)
 
         return pdfs_count
 
 
-args = parser.parse_args()
+def runit():
+    global args
+    args = parser.parse_args()
 
-if args.debug:
-    args.verbose = True
+    if args.debug:
+        args.verbose = True
 
-if args.brightness < 0:
-    args.brightness = 0
-if args.brightness > 255:
-    args.brightness = 255
+    if args.brightness < 0:
+        args.brightness = 0
+    if args.brightness > 255:
+        args.brightness = 255
 
-filepaths = glob.glob(args.filename)
-if not filepaths:
-    sys.exit("Error: no file found, check the documentation for more info.")
+    filepaths = glob.glob(args.filename)
+    if not filepaths:
+        sys.exit("Error: no file found, check the documentation for more info.")
 
-ofiles = 0
-ifiles = 0
+    global ofiles, ifiles
+    ofiles = 0
+    ifiles = 0
 
-for filepath in filepaths:
-    splitter = PdfQrSplit(filepath, args.verbose, args.debug, brightness=args.brightness)
-    ofiles += splitter.split_qr(args.separator, ifiles)
-    ifiles += 1
+    for filepath in filepaths:
+        splitter = PdfQrSplit(filepath, args.verbose, args.debug, brightness=args.brightness)
+        ofiles += splitter.split_qr(filepath)
+        ifiles += 1
 
-print(
-    "Split {} given files into {} files".format(
-        ifiles, ofiles
-    )
-)
+
+if __name__ == '__main__':
+    runit()

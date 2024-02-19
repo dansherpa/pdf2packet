@@ -6,6 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="222fbd4c-8d19-463b-9d92-9bd94d54937b" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/pdf2packet/__init.py__.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/pdf2packet/__init.py__" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/pdf2packet/pdf2packet.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/pdf2packet/pdf2packet.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -37,9 +38,18 @@
     "Python.pdf2packet.executor": "Run",
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "master"
+    "git-widget-placeholder": "master",
+    "last_opened_file_path": "C:/Users/RaggedRace/PycharmProjects/pdf2packet/src"
   }
 }]]></component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\RaggedRace\PycharmProjects\pdf2packet\src" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\RaggedRace\PycharmProjects\pdf2packet" />
+    </key>
+  </component>
   <component name="RunManager">
     <configuration name="pdf2packet" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="pdf2packet" />
@@ -55,7 +65,7 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/pdf2packet/pdf2packet.py" />
-      <option name="PARAMETERS" value="-v &quot;G:\My Drive\auto-packet\loc-and-results.pdf&quot;" />
+      <option name="PARAMETERS" value="&quot;G:\My Drive\auto-packet\loc-and-results.pdf&quot; --keep-separator" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
       <option name="MODULE_MODE" value="false" />
@@ -92,8 +102,13 @@
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/src/pdf2packet/pdf2packet.py</url>
-          <line>191</line>
+          <line>195</line>
           <option name="timeStamp" value="11" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/src/pdf2packet/pdf2packet.py</url>
+          <line>155</line>
+          <option name="timeStamp" value="14" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

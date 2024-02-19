@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=61.0","wheel"]
+build-backend = "setuptools.build_meta:__legacy__"
+
+[project]
+name = "pdf2packet"
+version = "0.0.9"
+dependencies=["PyPDF4","pyzxing","Pillow"]
+authors = [
+  { name="Dan Kennedy", email="dansherpa@gmail.com" },
+]
+description = "Combines and sorts PDFs with Cover Sheets into Result Packets"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/dansherpa/pdf2packet"
+Issues = "https://github.com/dansherpa/pdf2packet/issues"
+
+[project.scripts]
+pdf2packet = "pdf2packet.pdf2packet:runit"
+

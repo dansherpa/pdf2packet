@@ -1,0 +1,10 @@
+LICENSE
+README
+pyproject.toml
+src/pdf2packet/pdf2packet.py
+src/pdf2packet.egg-info/PKG-INFO
+src/pdf2packet.egg-info/SOURCES.txt
+src/pdf2packet.egg-info/dependency_links.txt
+src/pdf2packet.egg-info/entry_points.txt
+src/pdf2packet.egg-info/requires.txt
+src/pdf2packet.egg-info/top_level.txt
