@@ -47,8 +47,8 @@ def extract_barcodes(results) -> (str, str):
             barcode = r['parsed'].decode('ascii')
             if "RPSEQ:" in barcode:
                 sep = barcode.partition(":")[2]
-            # if "007" in barcode:
-            #     barcode = "RC: N0276"
+            if "007" in barcode:
+                barcode = "RC: N0276"
             if "RC:" in barcode:
                 race = barcode.partition(": ")[2]
     return sep, race
@@ -69,15 +69,28 @@ class PdfQrSplit:
                 )
             )
 
-    def split_qr(self, filepath: str) -> int:
+    def write_output(self, last_race, last_label, pdf_writer, common_docs, merge_files, pdfs_count):
+        if last_race:
+            output = last_label + "-" + last_race + ".pdf"
+            merge_files.setdefault(last_race, []).append(output)
+        else:
+            output = last_label + ".pdf"
+            if pdf_writer.getNumPages() > 0:
+                common_docs.append(output)
+        if pdf_writer.getNumPages() > 0:
+            if self.verbose:
+                print("    End of input - writing {} pages to {}".format(pdf_writer.getNumPages(), output))
+            with open(output, 'wb') as output_pdf:
+                pdf_writer.write(output_pdf)
+            pdfs_count += 1
+
+    def split_qr(self, filepath: str, common_docs, merge_files) -> int:
         """Creates new files based on barcode contents.
         Returns:
             int: Number of generated files.
         """
         pdfs_count = 0
         current_page = 0
-        common_docs = []
-        merge_files = {}
 
         print("Scanning {}".format(filepath), end=" ")
         sys.stdout.flush()
@@ -133,22 +146,9 @@ class PdfQrSplit:
                                         print("        Race:", new_race)
                                     split = True
                     if split:
-                        if last_race:
-                            output = last_label + "-" + last_race + ".pdf"
-                            merge_files.setdefault(last_race, []).append(output)
-                        else:
-                            output = last_label + ".pdf"
-                            if pdf_writer.getNumPages() > 0:
-                                common_docs.append(output)
+                        self.write_output(last_race, last_label, pdf_writer, common_docs, merge_files, pdfs_count)
                         last_label = new_sep
                         last_race = new_race
-                        if pdf_writer.getNumPages() > 0:
-                            if self.verbose:
-                                print(
-                                    "    Found separator - writing {} pages to {}".format(pdf_writer.getNumPages(), output))
-                            with open(output, 'wb') as output_pdf:
-                                pdf_writer.write(output_pdf)
-                            pdfs_count += 1
 
                         pdf_writer = PyPDF4.PdfFileWriter()
                         # Due to a bug in PyPDF4 PdfFileReader breaks when invoking PdfFileWriter.write - reopen file
@@ -161,19 +161,9 @@ class PdfQrSplit:
 
             current_page += 1
 
-        if last_race:
-            output = last_label + "-" + last_race + ".pdf"
-            merge_files.setdefault(last_race, []).append(output)
-        else:
-            output = last_label + ".pdf"
-            if pdf_writer.getNumPages() > 0:
-                common_docs.append(output)
+        self.write_output(last_race, last_label, pdf_writer, common_docs, merge_files, pdfs_count)
+
         if pdf_writer.getNumPages() > 0:
-            if self.verbose:
-                print("    End of input - writing {} pages to {}".format(pdf_writer.getNumPages(), output))
-            with open(output, 'wb') as output_pdf:
-                pdf_writer.write(output_pdf)
-            pdfs_count += 1
             for d in common_docs:
                 print(".", end=" ")
                 sys.stdout.flush()
@@ -219,9 +209,12 @@ def runit():
     ofiles = 0
     ifiles = 0
 
+    common_docs = []
+    merge_files = {}
+
     for filepath in filepaths:
         splitter = PdfQrSplit(filepath, args.verbose, args.debug, brightness=args.brightness)
-        ofiles += splitter.split_qr(filepath)
+        ofiles += splitter.split_qr(filepath, common_docs, merge_files)
         ifiles += 1
 
 
