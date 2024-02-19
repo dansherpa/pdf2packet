@@ -60,7 +60,7 @@ class PdfQrSplit:
         self.verbose = verbose
         self.debug = debug
         self.brightness = brightness
-        self.input_pdf = PyPDF4.PdfFileReader(filepath, "rb")
+        self.input_pdf = PyPDF4.PdfFileReader(filepath, False)
         self.total_pages = self.input_pdf.getNumPages()
         if verbose:
             print(
@@ -94,69 +94,70 @@ class PdfQrSplit:
 
             page = self.input_pdf.getPage(current_page)
 
-            xObject = page['/Resources']['/XObject'].getObject()
+            if '/XObject' in page['/Resources']:
+                xObject = page['/Resources']['/XObject'].getObject()
 
-            with TemporaryDirectory() as temp_dir:
-                if self.debug:
-                    print("    Writing page images to temporary directory {}".format(temp_dir))
+                with TemporaryDirectory() as temp_dir:
+                    if self.debug:
+                        print("    Writing page images to temporary directory {}".format(temp_dir))
 
-                split = False
-                for obj in xObject:
-                    print(".", end=" ")
-                    sys.stdout.flush()
-                    tgtn = False
-                    if xObject[obj]['/Subtype'] == '/Image':
-                        data = xObject[obj].getData()
+                    split = False
+                    for obj in xObject:
+                        print(".", end=" ")
+                        sys.stdout.flush()
+                        tgtn = False
+                        if xObject[obj]['/Subtype'] == '/Image':
+                            data = xObject[obj].getData()
 
-                        if '/FlateDecode' in xObject[obj]['/Filter'] or \
-                                '/DCTDecode' in xObject[obj]['/Filter'] or \
-                                '/JPXDecode' in xObject[obj]['/Filter']:
-                            tgtn = temp_dir + "/" + obj[1:] + ".png"
-                            img = PIL.Image.open(io.BytesIO(data))
-                            fn = lambda x: 255 if x > self.brightness else 0
-                            img = img.convert('L').point(fn, mode='1')
-                            img.save(tgtn)
-                        elif self.debug:
-                            print(f"      Unknown filter type {xObject[obj]['/Filter']}")
+                            if '/FlateDecode' in xObject[obj]['/Filter'] or \
+                                    '/DCTDecode' in xObject[obj]['/Filter'] or \
+                                    '/JPXDecode' in xObject[obj]['/Filter']:
+                                tgtn = temp_dir + "/" + obj[1:] + ".png"
+                                img = PIL.Image.open(io.BytesIO(data))
+                                fn = lambda x: 255 if x > self.brightness else 0
+                                img = img.convert('L').point(fn, mode='1')
+                                img.save(tgtn)
+                            elif self.debug:
+                                print(f"      Unknown filter type {xObject[obj]['/Filter']}")
 
-                        if tgtn:
-                            if self.debug:
-                                print("      Wrote image {}; Checking for separator barcode".format(tgtn))
-                            sep, race = extract_barcodes(reader.decode(tgtn))
-                            if sep:
-                                new_sep = sep
-                                new_race = race
+                            if tgtn:
                                 if self.debug:
-                                    print("        Found separator barcode")
-                                    print("        Label:", new_sep)
-                                    print("        Race:", new_race)
-                                split = True
-                if split:
-                    if last_race:
-                        output = last_label + "-" + last_race + ".pdf"
-                        merge_files.setdefault(last_race, []).append(output)
-                    else:
-                        output = last_label + ".pdf"
+                                    print("      Wrote image {}; Checking for separator barcode".format(tgtn))
+                                sep, race = extract_barcodes(reader.decode(tgtn))
+                                if sep:
+                                    new_sep = sep
+                                    new_race = race
+                                    if self.debug:
+                                        print("        Found separator barcode")
+                                        print("        Label:", new_sep)
+                                        print("        Race:", new_race)
+                                    split = True
+                    if split:
+                        if last_race:
+                            output = last_label + "-" + last_race + ".pdf"
+                            merge_files.setdefault(last_race, []).append(output)
+                        else:
+                            output = last_label + ".pdf"
+                            if pdf_writer.getNumPages() > 0:
+                                common_docs.append(output)
+                        last_label = new_sep
+                        last_race = new_race
                         if pdf_writer.getNumPages() > 0:
-                            common_docs.append(output)
-                    last_label = new_sep
-                    last_race = new_race
-                    if pdf_writer.getNumPages() > 0:
-                        if self.verbose:
-                            print(
-                                "    Found separator - writing {} pages to {}".format(pdf_writer.getNumPages(), output))
-                        with open(output, 'wb') as output_pdf:
-                            pdf_writer.write(output_pdf)
-                        pdfs_count += 1
+                            if self.verbose:
+                                print(
+                                    "    Found separator - writing {} pages to {}".format(pdf_writer.getNumPages(), output))
+                            with open(output, 'wb') as output_pdf:
+                                pdf_writer.write(output_pdf)
+                            pdfs_count += 1
 
-                    pdf_writer = PyPDF4.PdfFileWriter()
-                    # Due to a bug in PyPDF4 PdfFileReader breaks when invoking PdfFileWriter.write - reopen file
-                    self.input_pdf = PyPDF4.PdfFileReader(filepath, "rb")
+                        pdf_writer = PyPDF4.PdfFileWriter()
+                        # Due to a bug in PyPDF4 PdfFileReader breaks when invoking PdfFileWriter.write - reopen file
+                        self.input_pdf = PyPDF4.PdfFileReader(filepath, False)
 
-                    if args.keep_separator:
+                        if args.keep_separator:
+                            pdf_writer.addPage(page)
+                    else:
                         pdf_writer.addPage(page)
-                else:
-                    pdf_writer.addPage(page)
 
             current_page += 1
 

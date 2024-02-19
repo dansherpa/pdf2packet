@@ -6,7 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="222fbd4c-8d19-463b-9d92-9bd94d54937b" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/pdf2packet/__init.py__.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/pdf2packet/__init.py__" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/pdf2packet/pdf2packet.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/pdf2packet/pdf2packet.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -35,7 +34,7 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
-    "Python.pdf2packet.executor": "Run",
+    "Python.pdf2packet.executor": "Debug",
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "git-widget-placeholder": "master",
@@ -65,7 +64,7 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/pdf2packet/pdf2packet.py" />
-      <option name="PARAMETERS" value="&quot;G:\My Drive\auto-packet\loc-and-results.pdf&quot; --keep-separator" />
+      <option name="PARAMETERS" value="&quot;c:\test.pkt\*.pdf&quot; --keep-separator" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
       <option name="MODULE_MODE" value="false" />
@@ -102,21 +101,30 @@
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/src/pdf2packet/pdf2packet.py</url>
-          <line>195</line>
+          <line>196</line>
           <option name="timeStamp" value="11" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/src/pdf2packet/pdf2packet.py</url>
-          <line>155</line>
-          <option name="timeStamp" value="14" />
+          <line>76</line>
+          <option name="timeStamp" value="15" />
         </line-breakpoint>
       </breakpoints>
+      <default-breakpoints>
+        <breakpoint type="python-exception">
+          <properties notifyOnTerminate="true" exception="BaseException">
+            <option name="notifyOnTerminate" value="true" />
+          </properties>
+        </breakpoint>
+      </default-breakpoints>
     </breakpoint-manager>
     <watches-manager>
       <configuration name="PythonConfigurationType">
         <watch expression="r['parsed'].decode('ascii')" language="Python" />
         <watch expression="barcode['parsed'].decode('ascii')" language="Python" />
         <watch expression="merge_files[f]" language="Python" />
+        <watch expression="page['/Resources']" language="Python" />
+        <watch expression="xObject = page['/Resources']['/XObject']" language="Python" />
       </configuration>
     </watches-manager>
   </component>
