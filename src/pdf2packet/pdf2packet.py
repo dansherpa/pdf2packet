@@ -60,7 +60,7 @@ def make_unique_output_name(output, merge_files, common_docs) -> str:
             i = 1
             while True:
                 (base, ext) = os.path.splitext(output)
-                new_output = "{}-{:03d}{}".format(base, i, ext)
+                new_output = "{}.z{:03d}{}".format(base, i, ext)
                 if new_output not in merge_files[m]:
                     return new_output
                 i += 1
@@ -68,7 +68,7 @@ def make_unique_output_name(output, merge_files, common_docs) -> str:
         i = 1
         while True:
             (base, ext) = os.path.splitext(output)
-            new_output = "{}-{:03d}{}".format(base, i, ext)
+            new_output = "{}.z{:03d}{}".format(base, i, ext)
             if new_output not in common_docs:
                 return new_output
             i += 1
