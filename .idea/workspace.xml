@@ -101,23 +101,28 @@
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/src/pdf2packet/pdf2packet.py</url>
-          <line>186</line>
+          <line>208</line>
           <option name="timeStamp" value="11" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/src/pdf2packet/pdf2packet.py</url>
-          <line>91</line>
-          <option name="timeStamp" value="15" />
+          <line>94</line>
+          <option name="timeStamp" value="22" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/src/pdf2packet/pdf2packet.py</url>
-          <line>77</line>
-          <option name="timeStamp" value="20" />
+          <line>98</line>
+          <option name="timeStamp" value="23" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/src/pdf2packet/pdf2packet.py</url>
-          <line>166</line>
-          <option name="timeStamp" value="21" />
+          <line>71</line>
+          <option name="timeStamp" value="24" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/src/pdf2packet/pdf2packet.py</url>
+          <line>62</line>
+          <option name="timeStamp" value="25" />
         </line-breakpoint>
       </breakpoints>
       <default-breakpoints>

@@ -54,6 +54,26 @@ def extract_barcodes(results) -> (str, str):
     return sep, race
 
 
+def make_unique_output_name(output, merge_files, common_docs) -> str:
+    for m in merge_files:
+        if output in merge_files[m]:
+            i = 1
+            while True:
+                (base, ext) = os.path.splitext(output)
+                new_output = "{}-{:03d}{}".format(base, i, ext)
+                if new_output not in merge_files[m]:
+                    return new_output
+                i += 1
+    if output in common_docs:
+        i = 1
+        while True:
+            (base, ext) = os.path.splitext(output)
+            new_output = "{}-{:03d}{}".format(base, i, ext)
+            if new_output not in common_docs:
+                return new_output
+            i += 1
+    return output
+
 class PdfQrSplit:
     def __init__(self, filepath: str, verbose: bool, debug: bool, brightness: 128) -> None:
         self.filepath = filepath
@@ -72,9 +92,11 @@ class PdfQrSplit:
     def write_output(self, last_race, last_label, pdf_writer, common_docs, merge_files, pdfs_count):
         if last_race:
             output = last_label + "-" + last_race + ".pdf"
+            output = make_unique_output_name(output, merge_files, common_docs)
             merge_files.setdefault(last_race, []).append(output)
         else:
             output = last_label + ".pdf"
+            output = make_unique_output_name(output, merge_files, common_docs)
             if pdf_writer.getNumPages() > 0:
                 common_docs.append(output)
         if pdf_writer.getNumPages() > 0:
