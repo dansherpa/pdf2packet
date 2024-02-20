@@ -47,8 +47,8 @@ def extract_barcodes(results) -> (str, str):
             barcode = r['parsed'].decode('ascii')
             if "RPSEQ:" in barcode:
                 sep = barcode.partition(":")[2]
-            if "007" in barcode:
-                barcode = "RC: N0276"
+            # if "007" in barcode:
+            #     barcode = "RC: N0276"
             if "RC:" in barcode:
                 race = barcode.partition(": ")[2]
     return sep, race
@@ -60,7 +60,7 @@ def make_unique_output_name(output, merge_files, common_docs) -> str:
             i = 1
             while True:
                 (base, ext) = os.path.splitext(output)
-                new_output = "{}.z{:03d}{}".format(base, i, ext)
+                new_output = "{}.z  {:03d}{}".format(base, i, ext)
                 if new_output not in merge_files[m]:
                     return new_output
                 i += 1
@@ -91,14 +91,16 @@ class PdfQrSplit:
 
     def write_output(self, last_race, last_label, pdf_writer, common_docs, merge_files, pdfs_count):
         if last_race:
-            output = last_label + "-" + last_race + ".pdf"
+            output = last_label.replace("/", "") + "-" + last_race + ".pdf"
             output = make_unique_output_name(output, merge_files, common_docs)
-            merge_files.setdefault(last_race, []).append(output)
+            if output not in merge_files.setdefault(last_race, []):
+                merge_files.setdefault(last_race, []).append(output)
         else:
-            output = last_label + ".pdf"
+            output = last_label.replace("/", "") + ".pdf"
             output = make_unique_output_name(output, merge_files, common_docs)
             if pdf_writer.getNumPages() > 0:
-                common_docs.append(output)
+                if output not in common_docs:
+                    common_docs.append(output)
         if pdf_writer.getNumPages() > 0:
             if self.verbose:
                 print("    End of input - writing {} pages to {}".format(pdf_writer.getNumPages(), output))
@@ -146,7 +148,8 @@ class PdfQrSplit:
 
                             if '/FlateDecode' in xObject[obj]['/Filter'] or \
                                     '/DCTDecode' in xObject[obj]['/Filter'] or \
-                                    '/JPXDecode' in xObject[obj]['/Filter']:
+                                    '/JPXDecode' in xObject[obj]['/Filter'] or \
+                                    '/CCITTFaxDecode' in xObject[obj]['/Filter']:
                                 tgtn = temp_dir + "/" + obj[1:] + ".png"
                                 img = PIL.Image.open(io.BytesIO(data))
                                 fn = lambda x: 255 if x > self.brightness else 0
@@ -163,10 +166,12 @@ class PdfQrSplit:
                                     new_sep = sep
                                     new_race = race
                                     if self.debug:
-                                        print("        Found separator barcode")
-                                        print("        Label:", new_sep)
-                                        print("        Race:", new_race)
+                                        print("        Found separator barcode", new_sep)
                                     split = True
+                                if race:
+                                    new_race = race
+                                    if self.debug:
+                                        print("        Found race barcode", new_race)
                     if split:
                         self.write_output(last_race, last_label, pdf_writer, common_docs, merge_files, pdfs_count)
                         last_label = new_sep
@@ -184,29 +189,6 @@ class PdfQrSplit:
             current_page += 1
 
         self.write_output(last_race, last_label, pdf_writer, common_docs, merge_files, pdfs_count)
-
-        if pdf_writer.getNumPages() > 0:
-            for d in common_docs:
-                print(".", end=" ")
-                sys.stdout.flush()
-                for r in merge_files:
-                    print(".", end=" ")
-                    sys.stdout.flush()
-                    merge_files[r].append(d)
-            if len(merge_files) == 0:
-                print(".")
-                print("    No race codes found to create packets for")
-                sys.stdout.flush()
-            for f in merge_files.keys():
-                print(".")
-                merge_file = f + ".pdf"
-                print("    Merging these files into Result Packet {}:".format(merge_file))
-                sys.stdout.flush()
-                merge_files[f] = sorted(merge_files[f])
-                for r in merge_files[f]:
-                    print("        {}".format(r))
-                    sys.stdout.flush()
-                merge_pdfs(input_files=merge_files[f], output_file=merge_file)
 
         return pdfs_count
 
@@ -238,6 +220,29 @@ def runit():
         splitter = PdfQrSplit(filepath, args.verbose, args.debug, brightness=args.brightness)
         ofiles += splitter.split_qr(filepath, common_docs, merge_files)
         ifiles += 1
+
+    if ifiles > 0:
+        for d in common_docs:
+            print(".", end=" ")
+            sys.stdout.flush()
+            for r in merge_files:
+                print(".", end=" ")
+                sys.stdout.flush()
+                merge_files[r].append(d)
+        if len(merge_files) == 0:
+            print(".")
+            print("    No race codes found to create packets for")
+            sys.stdout.flush()
+        for f in merge_files.keys():
+            print(".")
+            merge_file = f + ".pdf"
+            print("    Merging these files into Result Packet {}:".format(merge_file))
+            sys.stdout.flush()
+            merge_files[f] = sorted(merge_files[f])
+            for r in merge_files[f]:
+                print("        {}".format(r))
+                sys.stdout.flush()
+            merge_pdfs(input_files=merge_files[f], output_file=merge_file)
 
 
 if __name__ == '__main__':
