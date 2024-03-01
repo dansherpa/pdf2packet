@@ -45,12 +45,12 @@ def extract_barcodes(results) -> (str, str):
     for r in results:
         if 'parsed' in r:
             barcode = r['parsed'].decode('ascii')
-            if "RPSEQ:" in barcode:
-                sep = barcode.partition(":")[2]
-            # if "007" in barcode:
-            #     barcode = "RC: N0276"
-            if "RC:" in barcode:
-                race = barcode.partition(": ")[2]
+            if barcode.startswith("RP"):
+                if ":" in barcode:
+                    sep = barcode.partition(":")[0]
+                    race = barcode.partition(":")[2]
+                else:
+                    sep = barcode
     return sep, race
 
 
@@ -60,7 +60,7 @@ def make_unique_output_name(output, merge_files, common_docs) -> str:
             i = 1
             while True:
                 (base, ext) = os.path.splitext(output)
-                new_output = "{}.z  {:03d}{}".format(base, i, ext)
+                new_output = "{}.{:03d}{}".format(base, i, ext)
                 if new_output not in merge_files[m]:
                     return new_output
                 i += 1
@@ -93,13 +93,18 @@ class PdfQrSplit:
         if last_race:
             output = last_label.replace("/", "") + "-" + last_race + ".pdf"
             output = make_unique_output_name(output, merge_files, common_docs)
-            if output not in merge_files.setdefault(last_race, []):
-                merge_files.setdefault(last_race, []).append(output)
+            # print("outputFile:", output)
+            if pdf_writer.getNumPages() > 0:
+                if output not in merge_files.setdefault(last_race, []):
+                    # print("added to mergefiles")
+                    merge_files.setdefault(last_race, []).append(output)
         else:
             output = last_label.replace("/", "") + ".pdf"
             output = make_unique_output_name(output, merge_files, common_docs)
+            # print("outputFile:", output)
             if pdf_writer.getNumPages() > 0:
                 if output not in common_docs:
+                    # print("added to common_docs")
                     common_docs.append(output)
         if pdf_writer.getNumPages() > 0:
             if self.verbose:
